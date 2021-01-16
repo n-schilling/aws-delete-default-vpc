@@ -1,0 +1,48 @@
+service: awsdeletedefaultvpc
+
+custom:
+  organization_account_id: '__ORG_MASTER_ACCOUNT_ID__'
+  regions_to_delete_default_vpc: '__AWS_REGIONS__'
+
+provider:
+  name: aws
+  runtime: python3.8
+  region: eu-central-1
+  logRetentionInDays: 7
+  lambdaHashingVersion: 20201221
+  tracing:
+    apiGateway: true
+    lambda: true
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - sts:AssumeRole
+      Resource: '*'
+  apiGateway:
+    shouldStartNameWithService: true
+    apiKeys:
+      - awsdeletedefaultvpc
+    usagePlan:
+      quota:
+        limit: 100
+        offset: 2
+        period: MONTH
+      throttle:
+        burstLimit: 20
+        rateLimit: 10
+
+functions:
+  function:
+    handler: handler.main
+    description: 'Function to delete default VPCs in project accounts'
+    memorySize: 128
+    timeout: 30
+    environment:
+      Organization_Account_Id: ${self:custom.organization_account_id}
+      Regions_To_Delete_Default_Vpc: ${self:custom.regions_to_delete_default_vpc}
+    events:
+      - http:
+          path: /
+          method: post
+          cors: true
+          private: true

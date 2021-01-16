@@ -1,0 +1,30 @@
+name: Deploy main branch
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+    - uses: actions/setup-node@v1
+      with:
+        node-version: '10.x'
+    - name: Replace account IDs
+      uses: falnyr/replace-env-vars-action@master
+      env:
+        AWS_REGIONS: ${{ secrets.AWS_REGIONS }}
+        ORG_MASTER_ACCOUNT_ID: ${{ secrets.ORG_MASTER_ACCOUNT_ID }}
+      with:
+        filename: serverless.yml
+    - name: Install Serverless Framework
+      run: npm install -g serverless
+    - name: Serverless AWS authentication
+      run: sls config credentials --provider aws --key ${{ secrets.AWS_ACCESS_KEY_ID }} --secret ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+    - name: Install NPM dependencies
+      run: npm install
+    - name: Deploy Lambda functions
+      run: sls deploy
