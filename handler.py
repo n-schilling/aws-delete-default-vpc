@@ -1,6 +1,7 @@
 import logging
 import os
 import sys
+
 import boto3
 from boto3.session import Session
 
@@ -100,7 +101,7 @@ def deleteDefaultVpcs(account_id_to_delete_vpc, regions_to_delete_default_vpc):
                         InternetGatewayId=igw_id
                     )
                     logger.info(f"Internet gateway {igw_id} is deleted")
-                
+
                 describe_subnets_response = region_ec2_org_client.describe_subnets(
                     Filters=[
                         {
@@ -124,7 +125,7 @@ def deleteDefaultVpcs(account_id_to_delete_vpc, regions_to_delete_default_vpc):
                     VpcId=vpc_id
                 )
                 logger.info(f"VPC {vpc_id} is deleted")
-            
+
 
 def main(event, context):
     try:
