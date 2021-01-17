@@ -2,7 +2,6 @@ service: awsdeletedefaultvpc
 
 custom:
   organization_account_id: '__ORG_MASTER_ACCOUNT_ID__'
-  regions_to_delete_default_vpc: '__AWS_REGIONS__'
 
 provider:
   name: aws
@@ -35,11 +34,10 @@ functions:
   function:
     handler: handler.main
     description: 'Function to delete default VPCs in project accounts'
-    memorySize: 128
-    timeout: 30
+    memorySize: 256
+    timeout: 180
     environment:
       Organization_Account_Id: ${self:custom.organization_account_id}
-      Regions_To_Delete_Default_Vpc: ${self:custom.regions_to_delete_default_vpc}
     events:
       - http:
           path: /
@@ -47,3 +45,7 @@ functions:
           cors: true
           private: true
           async: true
+          request:
+            parameters:
+              paths:
+                account_id: true

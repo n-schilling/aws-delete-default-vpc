@@ -8,15 +8,6 @@ from boto3.session import Session
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
-error_response = {
-    "statusCode": 500,
-    "headers": {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Credentials': True,
-    },
-    "body": "An error occurred. Please contact the Administrator."
-}
-
 
 def checkAccountIdInOrg(account_id_to_check, organization_account_id):
     sts_client = boto3.client('sts')
@@ -31,9 +22,9 @@ def checkAccountIdInOrg(account_id_to_check, organization_account_id):
 
     org_sts_client = org_session.client('sts')
     account_id = org_sts_client.get_caller_identity()["Account"]
-    logger.info(f"Switched to account id {account_id}")
+    logger.info(f"Switched to organization account id {account_id}")
     org_org_client = org_session.client('organizations')
-    logger.info(f"Try to describe data for project account {account_id_to_check}")
+    logger.info(f"Getting project account details for account id {account_id_to_check}")
     try:
         describe_account_response = org_org_client.describe_account(
             AccountId=account_id_to_check
@@ -45,7 +36,7 @@ def checkAccountIdInOrg(account_id_to_check, organization_account_id):
         return False
 
 
-def deleteDefaultVpcs(account_id_to_delete_vpc, regions_to_delete_default_vpc):
+def deleteDefaultVpcs(account_id_to_delete_vpc):
     sts_client = boto3.client('sts')
     assume_role_response = sts_client.assume_role(
         RoleArn='arn:aws:iam::' + account_id_to_delete_vpc + ':role/AwsVpcDeleteProjectRole',
@@ -58,8 +49,11 @@ def deleteDefaultVpcs(account_id_to_delete_vpc, regions_to_delete_default_vpc):
 
     org_sts_client = org_session.client('sts')
     account_id = org_sts_client.get_caller_identity()["Account"]
-    logger.info(f"Switched to account id {account_id}")
-    for region in regions_to_delete_default_vpc.split(","):
+    logger.info(f"Switched to project account id {account_id}")
+    default_ec2_org_client = org_session.client('ec2')
+    describe_regions_response=default_ec2_org_client.describe_regions()
+    for region_details in describe_regions_response['Regions']:
+        region = region_details['RegionName']
         logger.info(f"Working on region {region}")
         region_ec2_org_client = org_session.client('ec2', region_name = region)
         describe_vpcs_response = region_ec2_org_client.describe_vpcs(
@@ -89,7 +83,7 @@ def deleteDefaultVpcs(account_id_to_delete_vpc, regions_to_delete_default_vpc):
                     ]
                 )
                 if len(describe_internet_gateways_response['InternetGateways']) == 0:
-                    logger.warn(f"No internet gateways found in vpc {vpc_id}")
+                    logger.warn(f"No internet gateways attached to vpc {vpc_id}")
                 else:
                     igw_id = describe_internet_gateways_response['InternetGateways'][0]['InternetGatewayId']
                     region_ec2_org_client.detach_internet_gateway(
@@ -113,7 +107,7 @@ def deleteDefaultVpcs(account_id_to_delete_vpc, regions_to_delete_default_vpc):
                     ]
                 )
                 if len(describe_subnets_response['Subnets']) == 0:
-                    logger.warn(f"No subnets found in this VPC")
+                    logger.warn(f"No subnets found in VPC {vpc_id}")
                 else:
                     for subnet in describe_subnets_response['Subnets']:
                         subnet_id = subnet['SubnetId']
@@ -129,33 +123,21 @@ def deleteDefaultVpcs(account_id_to_delete_vpc, regions_to_delete_default_vpc):
 
 def main(event, context):
     try:
-        account_id = event['multiValueQueryStringParameters']['account_id'][0]
+        account_id = event['query']['account_id']
     except:
-        logger.error("The parameter account_id was not provided. Provided parameters: " + str(event['multiValueQueryStringParameters']))
-        return error_response
+        logger.error("The parameter account_id was not provided. Provided parameters: " + str(event['query']))
+        sys.exit(1)
     logger.info('Provided account id: ' + account_id)
 
     try:
         organization_account_id = os.environ['Organization_Account_Id']
-        regions_to_delete_default_vpc = os.environ['Regions_To_Delete_Default_Vpc']
     except:
         logger.error("Could not read env variable Organization_Account_Id")
         raise
 
     if checkAccountIdInOrg(account_id, organization_account_id):
         logger.info("Going to delete the default VPCs")
-        deleteDefaultVpcs(account_id,regions_to_delete_default_vpc)
-        response = {
-            "statusCode": 200,
-            "headers": {
-            'Access-Control-Allow-Origin': '*',
-            'Access-Control-Allow-Credentials': True,
-            },
-            "body": "The default VPC in the AWS account " + account_id + " was deleted"
-        }
-        logger.info('Success response will be send')
-        return response
-    return error_response
+        deleteDefaultVpcs(account_id)
 
 
 if __name__ == "__main__":

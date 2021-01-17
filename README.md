@@ -1,6 +1,8 @@
 # AWS VPC Delete
 AWS Serverless template to delete default VPCs in newly created AWS accounts as part of the account creation.
 
+This solution works asynchronously. So, you will get an HTTP 200 immediately after you've sent the request. This response is not an indicator that all default VPCs were being deleted. Deleting default VPCs in all available regions takes roughly 60 seconds.
+
 ## Base architecture
 
 ![AWS VPC Delete base architecture](images/architecture.png "AWS VPC Delete base architecture")
@@ -31,7 +33,13 @@ Please follow all the steps below to deploy the solution.
   * organization_account_id: The AWS account it of the AWS Organization main account
 3. run ```sls deploy``` to deploy the solution
 
-The endpoint URL and the key can be found in the output of the serverless deploy. The account id for the account where the default VPC needs to be deleted must be provided via URL parameter "account_id".
+:exclamation: The serverless output while action 3 will mention: 
+
+> WARNING: Function function has timeout of 180 seconds, however, it's attached to API Gateway so it's automatically limited to 30 seconds.
+
+The function is called asynchronously; therefore, you can ignore this message.
+
+The endpoint URL and the key can be found in the output of the serverless deployment. The account id for the account where the default VPC needs to be deleted must be provided via URL parameter ```account_id```.
 
 ### Undeploy
 

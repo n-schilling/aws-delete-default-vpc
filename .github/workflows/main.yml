@@ -18,7 +18,6 @@ jobs:
     - name: Replace account IDs
       uses: falnyr/replace-env-vars-action@master
       env:
-        AWS_REGIONS: ${{ secrets.AWS_REGIONS }}
         ORG_MASTER_ACCOUNT_ID: ${{ secrets.ORG_MASTER_ACCOUNT_ID }}
       with:
         filename: serverless.yml
