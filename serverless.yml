@@ -46,3 +46,4 @@ functions:
           method: post
           cors: true
           private: true
+          async: true
