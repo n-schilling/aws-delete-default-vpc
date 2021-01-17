@@ -34,7 +34,7 @@ functions:
   function:
     handler: handler.main
     description: 'Function to delete default VPCs in project accounts'
-    memorySize: 256
+    memorySize: 128
     timeout: 180
     environment:
       Organization_Account_Id: ${self:custom.organization_account_id}

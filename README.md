@@ -3,6 +3,8 @@ AWS Serverless template to delete default VPCs in newly created AWS accounts as 
 
 This solution works asynchronously. So, you will get an HTTP 200 immediately after you've sent the request. This response is not an indicator that all default VPCs were being deleted. Deleting default VPCs in all available regions takes roughly 60 seconds.
 
+On purpose, this script does not delete instances, VPC peerings, VPC endpoints, or other resources used by a default VPC not to interrupt projects which are actively using a default VPC. If this solution is executed right after the account creation, it is enough to delete the default VPC.
+
 ## Base architecture
 
 ![AWS VPC Delete base architecture](images/architecture.png "AWS VPC Delete base architecture")

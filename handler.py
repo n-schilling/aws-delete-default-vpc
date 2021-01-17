@@ -3,6 +3,7 @@ import os
 import sys
 
 import boto3
+import botocore
 from boto3.session import Session
 
 logger = logging.getLogger()
@@ -115,10 +116,13 @@ def deleteDefaultVpcs(account_id_to_delete_vpc):
                             SubnetId=subnet_id
                         )
                         logger.info(f"Subnet {subnet_id} is deleted")
-                region_ec2_org_client.delete_vpc(
-                    VpcId=vpc_id
-                )
-                logger.info(f"VPC {vpc_id} is deleted")
+                try:
+                    region_ec2_org_client.delete_vpc(
+                        VpcId=vpc_id
+                    )
+                    logger.info(f"VPC {vpc_id} is deleted")
+                except botocore.exceptions.ClientError as error:
+                    logger.error(f"Could not delete VPC {vpc_id} because of the following error: {error} ")                
 
 
 def main(event, context):
